@@ -15,7 +15,7 @@ import sys
 import smtplib
 from email.message import EmailMessage
 
-HOST = 'localhost'
+HOST = 'host.docker.internal'
 PORT = 1143
 SMPT_PORT = 2525
 FROM_EMAIL = "bot@bot.com"

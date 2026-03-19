@@ -1,0 +1,18 @@
+services:
+  smtp4dev:
+    image: rnwood/smtp4dev
+    ports:
+      - "3000:80"
+      - "2525:25"
+      - "1143:143"
+
+  dvea:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./env.list
+    ports:
+      - "8501:8501"
+    depends_on:
+      - smtp4dev

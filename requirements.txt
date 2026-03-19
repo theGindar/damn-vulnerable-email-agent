@@ -1,3 +1,6 @@
-streamlit
-langchain==0.0.306
-openai==0.28.1
+streamlit>=1.31
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-google-genai>=1.0.0
+python-dotenv>=1.0.0

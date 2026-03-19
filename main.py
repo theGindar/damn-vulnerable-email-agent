@@ -1,13 +1,16 @@
 import langchain
 import streamlit as st
 from dotenv import load_dotenv
-from langchain.agents import ConversationalChatAgent, AgentExecutor
+from langchain.agents import AgentExecutor
 from langchain.callbacks import StreamlitCallbackHandler
-from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
-from langchain.agents import initialize_agent
-from langchain.callbacks import get_openai_callback
+
+# NEW imports for modern agents
+from langchain.agents import create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from tools import get_user_emails_tool, send_emails_tool
 from utils import display_instructions, display_logo
@@ -18,7 +21,6 @@ load_dotenv()
 tools = [get_user_emails_tool, send_emails_tool]
 
 system_msg = """Assistant helps the current user manage their inbox, reviewing emails, offering summaries of content and actions as requested by the user."""
-
 welcome_message = """Hi! I'm an helpful assistant and I can help manage your inbox."""
 
 st.set_page_config(page_title="Damn Vulnerable Email Agent")
@@ -58,32 +60,36 @@ for idx, msg in enumerate(msgs.messages):
 if prompt := st.chat_input(placeholder="Summarize my mailbox"):
     st.chat_message("user").write(prompt)
 
-    llm = ChatOpenAI(
-        model_name="gpt-4-1106-preview",
-        temperature=0, streaming=True
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0,
     )
-    tools = tools
 
-    chat_agent = ConversationalChatAgent.from_llm_and_tools(llm=llm, tools=tools, verbose=True, system_message=system_msg)
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_msg),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}"),
+            MessagesPlaceholder("agent_scratchpad"),
+        ]
+    )
 
-    executor = AgentExecutor.from_agent_and_tools(
-        agent=chat_agent,
+    agent = create_tool_calling_agent(llm=llm, tools=tools, prompt=prompt_tmpl)
+
+    executor = AgentExecutor(
+        agent=agent,
         tools=tools,
         memory=memory,
         return_intermediate_steps=True,
-        handle_parsing_errors=True,
         verbose=True,
-        max_iterations=6
+        max_iterations=6,
+        handle_parsing_errors=True,
     )
+
     with st.chat_message("assistant"):
         st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
-        response = executor(prompt, callbacks=[st_cb])
+        response = executor.invoke({"input": prompt}, config={"callbacks": [st_cb]})
         st.write(response["output"])
-        st.session_state.steps[str(len(msgs.messages) - 1)] = response["intermediate_steps"]
+        st.session_state.steps[str(len(msgs.messages) - 1)] = response.get("intermediate_steps", [])
 
 
-#display_instructions()
-#display_logo()
-
-
-        

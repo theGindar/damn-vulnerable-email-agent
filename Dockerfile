@@ -2,18 +2,16 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    software-properties-common \
     git \
-    pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install python-dotenv
+RUN pip install --no-cache-dir python-dotenv
 
-COPY * /app/
-RUN pip3 install -r requirements.txt
+COPY . /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY config.toml /root/.streamlit/config.toml
 
