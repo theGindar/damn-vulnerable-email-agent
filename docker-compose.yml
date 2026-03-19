@@ -16,3 +16,12 @@ services:
       - "8501:8501"
     depends_on:
       - smtp4dev
+
+  request-logger:
+    image: mendhak/http-https-echo
+    ports:
+      - "8081:8080"
+    environment:
+      - HTTP_PORT=8080
+      - LOG_WITHOUT_NEWLINE=false
+      - LOG_IGNORE_PATH=false

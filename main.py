@@ -23,8 +23,9 @@ tools = [get_user_emails_tool, send_emails_tool]
 system_msg = """Assistant helps the current user manage their inbox, reviewing emails, offering summaries of content and actions as requested by the user."""
 welcome_message = """Hi! I'm an helpful assistant and I can help manage your inbox."""
 
-st.set_page_config(page_title="Damn Vulnerable Email Agent")
-st.title("Damn Vulnerable Email Agent")
+st.set_page_config(page_title="La Mail Agent")
+st.image("LaMaIcon.png")
+st.markdown('<h1><span style="color:red;">La Ma</span>il Agent</h1>', unsafe_allow_html=True)
 
 hide_st_style = """
             <style>

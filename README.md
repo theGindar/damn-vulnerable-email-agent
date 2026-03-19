@@ -63,6 +63,43 @@ docker run --env-file env.list -p 8501:8501 dvea
 
 ```
 
+### Using Docker Compose
+
+To run all services (DVEA app, SMTP server, and request logger) with Docker Compose:
+
+```sh
+docker-compose up
+```
+
+This will start:
+- DVEA application on port 8501
+- SMTP4Dev on port 3000 (web UI), 2525 (SMTP), and 1143 (IMAP)
+- Request logger on port 8081
+
+### Viewing Request Logger Logs
+
+The request logger container listens on port 8081 and logs all incoming HTTP requests. This is useful for testing indirect prompt injection attacks that attempt to exfiltrate data via image requests or other HTTP calls.
+
+To view the logs from the request logger:
+
+```sh
+# View live logs
+docker-compose logs -f request-logger
+
+# View all logs
+docker-compose logs request-logger
+
+# View last 50 lines
+docker-compose logs --tail=50 request-logger
+```
+
+The logger will capture and display details of all incoming requests including:
+- Request method (GET, POST, etc.)
+- URL path and query parameters
+- Headers
+- Request body
+- Timestamp
+
 ## Usage
 
 To interact with the vulnerable chatbot and test prompt injection, start the server and begin by issuing commands and observing responses.
