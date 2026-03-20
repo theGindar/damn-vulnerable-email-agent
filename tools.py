@@ -20,7 +20,7 @@ PORT = 1143
 SMPT_PORT = 2525
 FROM_EMAIL = "bot@bot.com"
 
-USERNAME = 'a'  # fill in your username
+USERNAME = 'john@gmail.com'  # fill in your username
 PASSWORD = 'a'  # fill in your password
 
     
