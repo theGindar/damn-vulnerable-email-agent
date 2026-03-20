@@ -28,6 +28,8 @@ welcome_message = """Hi! I'm an helpful assistant and I can help manage your inb
 st.set_page_config(page_title="La Mail Agent")
 st.image("LaMaIcon.png")
 st.markdown('<h1><span style="color:red;">La Ma</span>il Agent</h1>', unsafe_allow_html=True)
+# Toggle switch for secure mode (underneath the chat input)
+secure_mode = st.toggle("enable secure mode", value=False)
 
 hide_st_style = """
             <style>
@@ -93,28 +95,33 @@ if prompt := st.chat_input(placeholder="Summarize my mailbox"):
         st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
         response = executor.invoke({"input": prompt}, config={"callbacks": [st_cb]})
 
-        # Security agent reviews the output
-        security_llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            temperature=0,
-        )
+        # Check if secure mode is enabled
+        if secure_mode:
+            # Security agent reviews the output
+            security_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                temperature=0,
+            )
 
-        security_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", security_system_msg),
-                ("human", "Please review the following agent output:\n\n{agent_output}"),
-            ]
-        )
+            security_prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", security_system_msg),
+                    ("human", "Please review the following agent output:\n\n{agent_output}"),
+                ]
+            )
 
-        security_chain = security_prompt | security_llm
-        security_response = security_chain.invoke({"agent_output": response["output"]})
-        security_result = security_response.content.strip()
+            security_chain = security_prompt | security_llm
+            security_response = security_chain.invoke({"agent_output": response["output"]})
+            security_result = security_response.content.strip()
 
-        # Determine what to display based on security agent's verdict
-        if security_result.lower() == "ok":
-            st.write(response["output"])
+            # Determine what to display based on security agent's verdict
+            if security_result.lower() == "ok":
+                st.write(response["output"])
+            else:
+                st.write(security_result)
         else:
-            st.write(security_result)
+            # Secure mode disabled, show original output directly
+            st.write(response["output"])
 
         st.session_state.steps[str(len(msgs.messages) - 1)] = response.get("intermediate_steps", [])
 
