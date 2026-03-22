@@ -92,37 +92,61 @@ if prompt := st.chat_input(placeholder="Summarize my mailbox"):
     )
 
     with st.chat_message("assistant"):
-        st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
-        response = executor.invoke({"input": prompt}, config={"callbacks": [st_cb]})
+        if secure_mode:
+            # Secure mode: no real-time display, execute silently
+            response = executor.invoke({"input": prompt}, config={"callbacks": []})
+        else:
+            # Normal mode: show real-time progress
+            st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
+            response = executor.invoke({"input": prompt}, config={"callbacks": [st_cb]})
 
         # Check if secure mode is enabled
         if secure_mode:
-            # Security agent reviews the output
-            security_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                temperature=0,
-            )
+            with st.spinner("Processing securely..."):
+                # Security agent reviews the output
+                security_llm = ChatGoogleGenerativeAI(
+                    model="gemini-2.5-flash",
+                    temperature=0,
+                )
 
-            security_prompt = ChatPromptTemplate.from_messages(
-                [
-                    ("system", security_system_msg),
-                    ("human", "Please review the following agent output:\n\n{agent_output}"),
-                ]
-            )
+                security_prompt = ChatPromptTemplate.from_messages(
+                    [
+                        ("system", security_system_msg),
+                        ("human", "Please review the following agent output:\n\n{agent_output}"),
+                    ]
+                )
 
-            security_chain = security_prompt | security_llm
-            security_response = security_chain.invoke({"agent_output": response["output"]})
-            security_result = security_response.content.strip()
+                security_chain = security_prompt | security_llm
+                security_response = security_chain.invoke({"agent_output": response["output"]})
+                security_result = security_response.content.strip()
 
             # Determine what to display based on security agent's verdict
             if security_result.lower() == "ok":
+                # Security approved: display intermediate steps retroactively
+                intermediate_steps = response.get("intermediate_steps", [])
+                for step in intermediate_steps:
+                    if step[0].tool == "_Exception":
+                        continue
+                    with st.status(f"**{step[0].tool}**: {step[0].tool_input}", state="complete"):
+                        st.write(step[0].log)
+                        st.write(step[1])
+
+                # Display final output
                 st.write(response["output"])
+
+                # Save intermediate steps to session state for chat history
+                st.session_state.steps[str(len(msgs.messages) - 1)] = intermediate_steps
             else:
+                # Security flagged: display redacted message, clear memory, DON'T save steps
                 st.write(security_result)
+                # Erase all agent memory due to suspicious output
+                msgs.clear()
+                msgs.add_ai_message(welcome_message)
+                st.session_state.steps = {}
         else:
             # Secure mode disabled, show original output directly
             st.write(response["output"])
-
-        st.session_state.steps[str(len(msgs.messages) - 1)] = response.get("intermediate_steps", [])
+            # Save intermediate steps for chat history
+            st.session_state.steps[str(len(msgs.messages) - 1)] = response.get("intermediate_steps", [])
 
 
